@@ -158,10 +158,26 @@ export interface OpenRouterResponse {
 export async function callOpenRouter(
   apiKey: string,
   model: string,
-  messages: OpenRouterMessage[]
+  messages: OpenRouterMessage[],
+  language: string = 'en'
 ): Promise<string> {
   if (!apiKey) {
     throw new Error('OpenRouter API key not configured. Please add your key in Settings.');
+  }
+
+  // Add language instruction to system message if not English
+  const finalMessages = [...messages];
+  if (language !== 'en') {
+    const langName = language === 'ru' ? 'Russian' : language;
+    const systemMsg = finalMessages.find(m => m.role === 'system');
+    if (systemMsg) {
+      systemMsg.content += ` Please respond in ${langName}.`;
+    } else {
+      finalMessages.unshift({
+        role: 'system',
+        content: `You are a helpful assistant. Please respond in ${langName}.`
+      });
+    }
   }
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -174,7 +190,7 @@ export async function callOpenRouter(
     },
     body: JSON.stringify({
       model,
-      messages,
+      messages: finalMessages,
     } as OpenRouterRequest),
   });
 

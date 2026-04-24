@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSettings, useOpenRouter } from '../hooks/useChatLogic';
 import { DetectionConfig } from '../types';
-import { fetchOpenRouterModels, OpenRouterModel } from '../services/piiApi';
 
 const Settings = () => {
   const { settingsOpen, detectionConfig, updateConfig, toggleSettings } = useSettings();
@@ -11,51 +10,13 @@ const Settings = () => {
   const [localDetectionConfig, setLocalDetectionConfig] = useState<DetectionConfig>(detectionConfig);
   const [localOpenRouterConfig, setLocalOpenRouterConfig] = useState(openRouterConfig);
 
-  // State for dynamically loaded models
-  const [models, setModels] = useState<OpenRouterModel[]>([]);
-  const [modelsLoading, setModelsLoading] = useState(false);
-  const [modelsError, setModelsError] = useState<string | null>(null);
-
-  // Fetch models when settings open or API key changes
+  // Sync when modal opens
   useEffect(() => {
     if (settingsOpen) {
       setLocalDetectionConfig(detectionConfig);
       setLocalOpenRouterConfig(openRouterConfig);
-
-      // Fetch models if API key is available
-      if (openRouterConfig.apiKey) {
-        loadModels(openRouterConfig.apiKey);
-      } else {
-        setModels([]);
-        setModelsError('API key required to load models');
-      }
     }
-  }, [settingsOpen, openRouterConfig.apiKey]);
-
-  const loadModels = async (apiKey: string) => {
-    setModelsLoading(true);
-    setModelsError(null);
-    try {
-      const fetchedModels = await fetchOpenRouterModels(apiKey);
-      setModels(fetchedModels);
-
-      // Validate current model
-      const modelExists = fetchedModels.some(m => m.id === localOpenRouterConfig.model);
-      if (!modelExists && localOpenRouterConfig.model) {
-        const defaultModel = 'google/gemini-2.0-flash-exp:free';
-        console.warn(`Invalid model ${localOpenRouterConfig.model}, resetting to ${defaultModel}`);
-        const newConfig = { ...localOpenRouterConfig, model: defaultModel };
-        setLocalOpenRouterConfig(newConfig);
-        updateOpenRouterConfig({ model: defaultModel });
-      }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to load models';
-      setModelsError(errorMsg);
-      console.error('Failed to fetch models:', err);
-    } finally {
-      setModelsLoading(false);
-    }
-  };
+  }, [settingsOpen, detectionConfig, openRouterConfig]);
 
   if (!settingsOpen) return null;
 
@@ -64,14 +25,12 @@ const Settings = () => {
   };
 
   const handleSave = () => {
-    // Apply all changes to global state
     updateConfig(localDetectionConfig as Partial<DetectionConfig>);
     updateOpenRouterConfig(localOpenRouterConfig);
     toggleSettings();
   };
 
   const handleCancel = () => {
-    // Reset to original values and close
     setLocalDetectionConfig(detectionConfig);
     setLocalOpenRouterConfig(openRouterConfig);
     toggleSettings();
@@ -140,51 +99,28 @@ const Settings = () => {
                 </div>
               </div>
 
-              {/* Model Selection */}
-              <div className="p-3 bg-neutral-900 border border-neutral-800">
+              {/* Language Selection */}
+              <div className="mt-3 pt-3 border-t border-neutral-800">
                 <label className="block font-mono text-xs text-on-surface font-bold mb-2">
-                  Model
+                  Response Language
                 </label>
-
-                {modelsLoading && (
-                  <div className="text-neutral-400 text-xs mb-2 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
-                    Loading models...
-                  </div>
-                )}
-
-                {modelsError && (
-                  <div className="text-rose-400 text-xs mb-2">
-                    Error: {modelsError}
-                  </div>
-                )}
-
-                {!modelsLoading && !modelsError && models.length === 0 && (
-                  <div className="text-neutral-500 text-xs mb-2">
-                    No models available. Check your API key.
-                  </div>
-                )}
-
                 <select
-                  value={localOpenRouterConfig.model}
-                  onChange={(e) => setLocalOpenRouterConfig(prev => ({ ...prev, model: e.target.value }))}
-                  disabled={modelsLoading || models.length === 0}
-                  className="w-full bg-neutral-950 border border-neutral-800 text-neutral-300 px-3 py-2 font-mono text-xs focus:border-rose-700 focus:outline-none transition-colors cursor-pointer disabled:opacity-50"
+                  value={localOpenRouterConfig.language || 'en'}
+                  onChange={(e) => setLocalOpenRouterConfig(prev => ({ ...prev, language: e.target.value }))}
+                  className="w-full bg-neutral-950 border border-neutral-800 text-neutral-300 px-3 py-2 font-mono text-xs focus:border-rose-700 focus:outline-none transition-colors cursor-pointer"
                 >
-                  {models.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.free ? '🔶 ' : '🔷 '}{model.name} {model.free ? '(Free)' : ''}
-                    </option>
-                  ))}
+                  <option value="en">🇺🇸 English</option>
+                  <option value="ru">🇷🇺 Русский</option>
+                  <option value="mixed">🌐 Mixed (EN + RU)</option>
                 </select>
-
                 <div className="text-[9px] text-neutral-600 mt-1">
-                  🟡 Free models have zero cost. Paid models require credits.
-                  {models.length > 0 && (
-                    <span className="ml-2">({models.filter(m => m.free).length} free / {models.length} total)</span>
-                  )}
+                  Language the AI will use for its response
                 </div>
               </div>
+            </div>
+
+            <div className="text-[9px] text-neutral-600 mt-3 pt-3 border-t border-neutral-800">
+              💡 Configure your API key to enable AI responses.
             </div>
           </div>
 

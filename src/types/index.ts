@@ -68,6 +68,7 @@ export interface DetectionConfig {
 export interface OpenRouterConfig {
   apiKey: string;
   model: string;
+  language?: string; // Language for AI response (en, ru, mixed)
 }
 
 // App state

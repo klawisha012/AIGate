@@ -17,14 +17,15 @@ const loadFromStorage = (): Partial<AppState> => {
         // parsed.openRouterConfig.apiKey = '';
       }
 
-      return {
-        sessions: parsed.sessions || [],
-        currentSessionId: parsed.currentSessionId || null,
-        openRouterConfig: {
-          apiKey: parsed.openRouterConfig?.apiKey || '',
-          model: model,
-        },
-        detectionConfig: parsed.detectionConfig || {
+        return {
+          sessions: parsed.sessions || [],
+          currentSessionId: parsed.currentSessionId || null,
+          openRouterConfig: {
+            apiKey: parsed.openRouterConfig?.apiKey || '',
+            model: model,
+            language: parsed.openRouterConfig?.language || 'en',
+          },
+          detectionConfig: parsed.detectionConfig || {
           enableEmail: true,
           enablePhone: true,
           enableAddress: true,
@@ -77,6 +78,7 @@ const initialState: AppState = {
   openRouterConfig: {
     apiKey: '',
     model: 'google/gemini-2.0-flash-exp:free',
+    language: 'en',
   },
 };
 

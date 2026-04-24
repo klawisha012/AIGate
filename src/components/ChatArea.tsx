@@ -1,12 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useChatLogic } from '../hooks/useChatLogic';
+import { useChatLogic, useOpenRouter } from '../hooks/useChatLogic';
 import { Message } from '../types';
 import { formatTimestamp } from '../services/utils';
+import { fetchOpenRouterModels } from '../services/piiApi';
 
 const ChatArea = () => {
   const { sendMessage, isProcessing, currentSession } = useChatLogic();
+  const { openRouterConfig, updateOpenRouterConfig } = useOpenRouter();
   const [inputValue, setInputValue] = useState('');
+  const [showModelSelector, setShowModelSelector] = useState(false);
+  const [modelSearch, setModelSearch] = useState('');
+  const [models, setModels] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load models when selector opens
+  useEffect(() => {
+    if (showModelSelector && openRouterConfig.apiKey) {
+      loadModels(openRouterConfig.apiKey);
+    }
+  }, [showModelSelector, openRouterConfig.apiKey]);
+
+  const loadModels = async (apiKey: string) => {
+    try {
+      const fetchedModels = await fetchOpenRouterModels(apiKey);
+      setModels(fetchedModels);
+    } catch (err) {
+      console.error('Failed to fetch models:', err);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -123,6 +144,82 @@ const ChatArea = () => {
 
       {/* Input Bar */}
       <div className="p-lg border-t border-neutral-900 bg-surface">
+      {/* Model selector above input */}
+        <div className="max-w-3xl mx-auto mb-2 flex items-center justify-between">
+          <button
+            onClick={() => setShowModelSelector(!showModelSelector)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 text-xs font-mono transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm text-rose-500">smart_toy</span>
+            <span className="font-bold">{openRouterConfig.model.split('/').pop()?.split(':')[0]}</span>
+            <span className="material-symbols-outlined text-xs">
+              {showModelSelector ? 'expand_less' : 'expand_more'}
+            </span>
+          </button>
+          <span className="font-label-caps text-[9px] text-neutral-600">
+            PRIVACYGATE AI
+          </span>
+        </div>
+
+        {/* Model selector dropdown with search */}
+        {showModelSelector && (
+          <div className="max-w-3xl mx-auto mb-2 bg-neutral-950 border border-neutral-800 shadow-lg max-h-64 overflow-hidden flex flex-col">
+            {/* Search input */}
+            <div className="p-2 border-b border-neutral-800">
+              <input
+                type="text"
+                value={modelSearch}
+                onChange={(e) => setModelSearch(e.target.value)}
+                placeholder="Search models..."
+                className="w-full bg-neutral-900 border border-neutral-800 text-neutral-300 px-3 py-2 text-xs focus:border-rose-700 focus:outline-none"
+              />
+            </div>
+
+            {/* Model list */}
+            <div className="overflow-y-auto flex-1">
+              {models
+                .filter(m =>
+                  m.id.toLowerCase().includes(modelSearch.toLowerCase()) ||
+                  m.name.toLowerCase().includes(modelSearch.toLowerCase())
+                )
+                .map((model) => (
+                  <button
+                    key={model.id}
+                    onClick={() => {
+                      updateOpenRouterConfig({ model: model.id });
+                      setShowModelSelector(false);
+                      setModelSearch('');
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-center gap-2 ${
+                      openRouterConfig.model === model.id
+                        ? 'bg-rose-900/30 text-rose-400'
+                        : 'text-neutral-400 hover:bg-neutral-900'
+                    }`}
+                  >
+                    <span>{model.free ? '🔶' : '🔷'}</span>
+                    <span className="flex-1">{model.name}</span>
+                    {openRouterConfig.model === model.id && (
+                      <span className="material-symbols-outlined text-sm">check</span>
+                    )}
+                  </button>
+                ))}
+              {models.filter(m =>
+                m.id.toLowerCase().includes(modelSearch.toLowerCase()) ||
+                m.name.toLowerCase().includes(modelSearch.toLowerCase())
+              ).length === 0 && (
+                <div className="p-3 text-xs text-neutral-500 text-center">
+                  No models found. Check your API key in Settings.
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-2 border-t border-neutral-800 text-[9px] text-neutral-600 text-center">
+              {models.filter(m => m.free).length} free / {models.length} total models
+            </div>
+          </div>
+        )}
+
         <div className="max-w-3xl mx-auto relative">
           <input
             className="w-full bg-[#1A1A1D] border-0 border-b-2 border-neutral-700 focus:border-rose-700 text-on-surface py-4 px-4 font-mono text-sm tracking-wider focus:ring-0 transition-colors duration-200"

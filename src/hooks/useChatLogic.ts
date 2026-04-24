@@ -50,7 +50,8 @@ export function useChatLogic() {
       const aiResponseContent = await callOpenRouter(
         openRouterConfig.apiKey,
         openRouterConfig.model,
-        [{ role: 'user', content: sanitizedContent }]
+        [{ role: 'user', content: sanitizedContent }],
+        openRouterConfig.language || 'en'
       );
 
       // Create AI response message
