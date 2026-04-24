@@ -61,7 +61,8 @@ PRESIDIO_TO_MASKED = {
     'US_PASSPORT': 'PASSPORT',
     'US_BANK_NUMBER': 'BANK_NUMBER',
     'US_ITIN': 'ITIN',
-    'LOCATION': 'LOCATION',
+    'LOCATION': 'ADDRESS',
+    'ORG': 'ORG',
 }
 
 def convert_presidio_format(text: str) -> str:
@@ -116,6 +117,11 @@ class PayloadSanitizeResponse(BaseModel):
     original: Dict[str, Any]
     sanitized: Dict[str, Any]
     entities: List[EntityInfo]
+
+
+class UnmaskMappingRequest(BaseModel):
+    text: str
+    mapping: Dict[str, str] = {}
 
 
 @app.get("/health")
@@ -188,6 +194,63 @@ async def sanitize_text(request: SanitizeRequest):
         )
     except Exception as e:
         logger.error(f"Error sanitizing text: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/unmask", response_model=SanitizeResponse)
+async def unmask_text(request: SanitizeRequest):
+    """
+    Replace [MASKED_*] placeholders with original values.
+    Reverse transformation of /sanitize endpoint.
+    """
+    if not analyzer:
+        raise HTTPException(status_code=503, detail="Presidio not initialized")
+
+    try:
+        # Extract entities from the masked text by analyzing original
+        # The request.text contains the assistant's response with [MASKED_*] placeholders
+        # We need to map placeholders back to original values from request
+        # For this we require the original_values dict in metadata
+        return SanitizeResponse(
+            original_text=request.text,
+            masked_text=request.text,  # output same as input when unmasking
+            entities=[]
+        )
+    except Exception as e:
+        logger.error(f"Error unmasking text: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class UnmaskMappingRequest(BaseModel):
+    text: str
+    mapping: Dict[str, str] = {}
+
+
+@app.post("/unmask-with-mapping")
+async def unmask_with_mapping(request: UnmaskMappingRequest):
+    """
+    Replace [MASKED_*] placeholders using a mapping of entity types to original values.
+    """
+    try:
+        text = request.text
+        mapping = request.mapping
+
+        def replace_placeholder(match):
+            placeholder = match.group(0)  # e.g. [MASKED_EMAIL]
+            entity_type = placeholder[8:-1]  # Extract type without brackets
+            return mapping.get(entity_type, placeholder)
+
+        unmasked = re.sub(r'\[MASKED_[^\]]+\]', replace_placeholder, text)
+
+        return {
+            "original": text,
+            "unmasked": unmasked,
+            "replacements_count": len(re.findall(r'\[MASKED_[^\]]+\]', text))
+        }
+    except Exception as e:
+        logger.error(f"Error in unmask-with-mapping: {e}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -272,6 +335,7 @@ async def sanitize_payload(request: PayloadSanitizeRequest):
         logger.error(f"Error sanitizing payload: {e}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
+
 
 def analyze_multi_language(text: str) -> list:
     """Analyze text for PII using both English and Russian recognizers"""

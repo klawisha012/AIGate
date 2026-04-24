@@ -6,6 +6,10 @@ export interface Message {
   timestamp: number;
   isSanitized?: boolean;
   originalContent?: string;
+  entities?: Array<{
+    type: string;
+    value: string;
+  }>; // PII entities from user message for unmasking
 }
 
 // PII Entity types

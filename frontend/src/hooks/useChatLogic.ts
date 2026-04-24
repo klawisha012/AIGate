@@ -1,7 +1,7 @@
 import { useApp } from '../context/AppContext';
 import { Message, DetectionConfig, OpenRouterConfig } from '../types';
 import { createAuditLog } from '../services/utils';
-import { sanitizeText, callOpenRouter } from '../services/piiApi';
+import { sanitizeText, callOpenRouter, EntityInfo } from '../services/piiApi';
 
 export function useChatLogic() {
   const { state, dispatch } = useApp();
@@ -32,6 +32,10 @@ export function useChatLogic() {
         timestamp: Date.now(),
         isSanitized: true,
         originalContent: content,
+        entities: sanitizeResult.entities?.map((e: EntityInfo) => ({
+          type: e.entity_type,
+          value: e.text
+        })) || [],
       };
 
       dispatch({ type: 'ADD_MESSAGE', payload: userMessage });
