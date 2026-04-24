@@ -1,0 +1,167 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #131316;
+  color: #e4e1e5;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px; /* Increased base font size */
+}
+
+/* Material Icons */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  font-family: 'Material Symbols Outlined';
+}
+
+/* Privacy masking - hidden PII */
+.mask-block {
+  background-color: #c3073f;
+  color: transparent;
+  user-select: none;
+  border-radius: 2px;
+  padding: 0 4px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* Telegram-style spoiler/blur effect for masked PII */
+.masked-entity {
+  filter: blur(4px);
+  background-color: rgba(195, 7, 63, 0.3);
+  color: transparent;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.3s ease, color 0.3s ease, background-color 0.3s ease;
+  position: relative;
+}
+
+.masked-entity:hover {
+  filter: blur(2px);
+  background-color: rgba(195, 7, 63, 0.5);
+}
+
+.masked-entity.revealed {
+  filter: blur(0);
+  color: inherit;
+  background-color: transparent;
+  cursor: default;
+}
+
+/* Animated shimmer effect like Telegram */
+.masked-entity::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+.masked-entity.revealed::before {
+  display: none;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Neo-brutalism utility borders */
+.neo-border {
+  border: 1px solid #4E4E50;
+}
+
+.neo-border-accent {
+  border: 1px solid #c3073f;
+}
+
+/* Hard shadow effect */
+.hard-shadow {
+  box-shadow: 4px 4px 0px 0px #1a1a1d;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom dark scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #1a1a1d;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #353438;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #454548;
+}
+
+/* Terminal cursor animation */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.terminal-cursor {
+  animation: blink 1s infinite;
+}
+
+/* Loading spinner for PII detection */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Message entrance animation */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-enter {
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* Pulse animation for active indicators */
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
+}
